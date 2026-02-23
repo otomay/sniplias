@@ -1,0 +1,37 @@
+[package]
+name = "sniplias"
+version = "0.1.0"
+edition = "2026"
+authors = ["otomay"]
+description = "A beautiful TUI for managing shell aliases and command snippets"
+license = "MIT"
+repository = "https://github.com/otomay/sniplias"
+homepage = "https://github.com/otomay/sniplias"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+directories = "6.0"
+regex = "1.11"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
+thiserror = "2.0"
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3.15"
+
+[[bin]]
+name = "sniplias"
+path = "src/main.rs"
+
+[debian]
+name = "sniplias"
+section = "utils"
+priority = "optional"
+depends = "$auto"
+architecture = "amd64"

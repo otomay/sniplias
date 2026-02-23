@@ -1,0 +1,23 @@
+# Build artifacts
+/target/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Personal
+.sisyphus
+Cargo.lock
+*.md
+!README.md
