@@ -43,10 +43,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to AUR
-        uses: KSXGitHub/github-actions-deploy-aur@v2.6.0
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: sniplias-bin
           pkgbuild: release/PKGBUILD
           commit_username: otomay
           commit_email: otomay@users.noreply.github.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package
+          ssh_keyscan_types: rsa,ecdsa,ed25519
