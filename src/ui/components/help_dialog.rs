@@ -63,7 +63,7 @@ pub fn render_help_dialog(f: &mut Frame, theme: &Theme) {
 
     let shortcuts = [
         ("Tab", "Switch tabs"),
-        ("j/k", "Navigate list"),
+        ("←/→  j/k", "Navigate"),
         ("/", "Search"),
         ("a", "Add new"),
         ("e", "Edit"),

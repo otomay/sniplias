@@ -21,7 +21,7 @@ pub fn render_status_bar(
     } else {
         match current_tab {
             Tab::Aliases => vec![
-                ("j/k", "Navigate"),
+                ("←/→  j/k", "Navigate"),
                 ("/", "Search"),
                 ("a", "Add"),
                 ("e", "Edit"),
@@ -30,7 +30,7 @@ pub fn render_status_bar(
                 ("q", "Quit"),
             ],
             Tab::Snippets => vec![
-                ("j/k", "Navigate"),
+                ("←/→  j/k", "Navigate"),
                 ("/", "Search"),
                 ("Enter", "Run"),
                 ("a", "Add"),
