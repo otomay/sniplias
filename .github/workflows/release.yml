@@ -31,6 +31,7 @@ jobs:
           cargo aur pkgbuild
           mv target/cargo-aur/PKGBUILD release/
           mv target/cargo-aur/*.tar.gz release/
+          mv target/release/sniplias release/sniplias-linux-x86_64
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -38,6 +39,7 @@ jobs:
           files: |
             release/*.deb
             release/sniplias-*-x86_64.tar.gz
+            release/sniplias-linux-x86_64
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
