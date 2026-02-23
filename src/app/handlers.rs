@@ -290,6 +290,7 @@ fn edit_snippet(
         }
 
         let new_snippet = Snippet::new(title.to_string(), command.to_string())
+            .with_id(id)
             .with_description(description.unwrap_or_default());
 
         app.snippet_store.update(id, new_snippet)?;

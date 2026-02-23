@@ -67,6 +67,7 @@ impl InputDialog {
 
     pub fn add_field(mut self, label: impl Into<String>) -> Self {
         self.fields.push(InputField::new(label));
+        self.update_focus();
         self
     }
 
@@ -76,6 +77,7 @@ impl InputDialog {
         value: impl Into<String>,
     ) -> Self {
         self.fields.push(InputField::new(label).with_value(value));
+        self.update_focus();
         self
     }
 
@@ -97,7 +99,7 @@ impl InputDialog {
         }
     }
 
-    fn update_focus(&mut self) {
+    pub fn update_focus(&mut self) {
         for (i, field) in self.fields.iter_mut().enumerate() {
             field.focused = i == self.current_field;
         }

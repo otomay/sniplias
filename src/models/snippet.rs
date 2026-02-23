@@ -32,6 +32,11 @@ impl Snippet {
         }
     }
 
+    pub fn with_id(mut self, id: Uuid) -> Self {
+        self.id = id;
+        self
+    }
+
     pub fn with_description(mut self, description: String) -> Self {
         self.description = Some(description);
         self
