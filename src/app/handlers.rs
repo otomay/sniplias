@@ -61,6 +61,15 @@ fn handle_search_mode(app: &mut AppState, key: crossterm::event::KeyEvent) {
         KeyCode::Backspace => {
             app.search.handle_backspace();
         }
+        KeyCode::Delete => {
+            app.search.handle_delete();
+        }
+        KeyCode::Left => {
+            app.search.handle_left();
+        }
+        KeyCode::Right => {
+            app.search.handle_right();
+        }
         _ => {}
     }
 }
@@ -102,6 +111,21 @@ fn handle_dialog_mode(app: &mut AppState, key: crossterm::event::KeyEvent) {
                     field.handle_backspace();
                 }
             }
+            KeyCode::Delete => {
+                if let Some(field) = dialog.current_field_mut() {
+                    field.handle_delete();
+                }
+            }
+            KeyCode::Left => {
+                if let Some(field) = dialog.current_field_mut() {
+                    field.handle_left();
+                }
+            }
+            KeyCode::Right => {
+                if let Some(field) = dialog.current_field_mut() {
+                    field.handle_right();
+                }
+            }
             _ => {}
         }
     }
@@ -110,7 +134,9 @@ fn handle_dialog_mode(app: &mut AppState, key: crossterm::event::KeyEvent) {
 fn handle_enter(app: &mut AppState) {
     match app.current_tab {
         crate::ui::Tab::Aliases => {}
-        crate::ui::Tab::Snippets => { app.try_run_snippet(); }
+        crate::ui::Tab::Snippets => {
+            app.try_run_snippet();
+        }
     }
 }
 

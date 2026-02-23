@@ -9,6 +9,7 @@ use ratatui::{
 
 pub struct SearchBar {
     pub query: String,
+    pub cursor_pos: usize,
     pub focused: bool,
 }
 
@@ -16,16 +17,39 @@ impl SearchBar {
     pub fn new() -> Self {
         Self {
             query: String::new(),
+            cursor_pos: 0,
             focused: false,
         }
     }
 
     pub fn handle_char(&mut self, c: char) {
-        self.query.push(c);
+        self.query.insert(self.cursor_pos, c);
+        self.cursor_pos += 1;
     }
 
     pub fn handle_backspace(&mut self) {
-        self.query.pop();
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+            self.query.remove(self.cursor_pos);
+        }
+    }
+
+    pub fn handle_delete(&mut self) {
+        if self.cursor_pos < self.query.len() {
+            self.query.remove(self.cursor_pos);
+        }
+    }
+
+    pub fn handle_left(&mut self) {
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+        }
+    }
+
+    pub fn handle_right(&mut self) {
+        if self.cursor_pos < self.query.len() {
+            self.cursor_pos += 1;
+        }
     }
 }
 
@@ -36,8 +60,13 @@ impl Default for SearchBar {
 }
 
 pub fn render_search_bar(f: &mut Frame, area: Rect, search: &SearchBar, theme: &Theme) {
-    let cursor = if search.focused { "|" } else { "" };
-    let display_text = format!("{}{}", search.query, cursor);
+    let display_text = if search.focused {
+        let prefix = &search.query[..search.cursor_pos];
+        let suffix = &search.query[search.cursor_pos..];
+        format!("{}|{}", prefix, suffix)
+    } else {
+        search.query.clone()
+    };
 
     let block = Block::default()
         .borders(Borders::ALL)

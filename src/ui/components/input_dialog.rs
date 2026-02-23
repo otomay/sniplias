@@ -11,6 +11,7 @@ use ratatui::{
 pub struct InputField {
     pub label: String,
     pub value: String,
+    pub cursor_pos: usize,
     pub focused: bool,
 }
 
@@ -19,21 +20,45 @@ impl InputField {
         Self {
             label: label.into(),
             value: String::new(),
+            cursor_pos: 0,
             focused: false,
         }
     }
 
     pub fn with_value(mut self, value: impl Into<String>) -> Self {
         self.value = value.into();
+        self.cursor_pos = self.value.len();
         self
     }
 
     pub fn handle_char(&mut self, c: char) {
-        self.value.push(c);
+        self.value.insert(self.cursor_pos, c);
+        self.cursor_pos += 1;
     }
 
     pub fn handle_backspace(&mut self) {
-        self.value.pop();
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+            self.value.remove(self.cursor_pos);
+        }
+    }
+
+    pub fn handle_delete(&mut self) {
+        if self.cursor_pos < self.value.len() {
+            self.value.remove(self.cursor_pos);
+        }
+    }
+
+    pub fn handle_left(&mut self) {
+        if self.cursor_pos > 0 {
+            self.cursor_pos -= 1;
+        }
+    }
+
+    pub fn handle_right(&mut self) {
+        if self.cursor_pos < self.value.len() {
+            self.cursor_pos += 1;
+        }
     }
 }
 
@@ -193,8 +218,13 @@ pub fn render_input_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme) {
             Style::default().fg(theme.text_secondary)
         };
 
-        let cursor = if is_focused { "|" } else { "" };
-        let display_text = format!("{}{}", field.value, cursor);
+        let display_text = if is_focused {
+            let prefix = &field.value[..field.cursor_pos];
+            let suffix = &field.value[field.cursor_pos..];
+            format!("{}|{}", prefix, suffix)
+        } else {
+            field.value.clone()
+        };
 
         let paragraph = Paragraph::new(display_text).style(style).block(field_block);
 
