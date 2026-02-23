@@ -1,6 +1,6 @@
 [package]
 name = "sniplias"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["otomay"]
 description = "A beautiful TUI for managing shell aliases and command snippets"
