@@ -5,50 +5,97 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-      - name: Build release
-        run: cargo build --release
+      - name: Install ARM cross compiler
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
 
-      - name: Generate deb package
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb
+
+      - name: Generate deb
+        run: cargo deb --target ${{ matrix.target }} --output release
+
+      - name: Prepare binary
         run: |
-          cargo install cargo-deb
-          cargo deb --output release
+          mkdir -p release
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
+            cp target/${{ matrix.target }}/release/sniplias release/sniplias-linux-x86_64
+          else
+            cp target/${{ matrix.target }}/release/sniplias release/sniplias-linux-aarch64
+          fi
 
-      - name: Generate AUR package
+      - name: Upload artifacts (internal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: release/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+
+      - name: Flatten artifacts
         run: |
-          cargo install cargo-aur
-          cargo aur pkgbuild
-          mv target/cargo-aur/PKGBUILD release/
-          mv target/cargo-aur/*.tar.gz release/
-          mv target/release/sniplias release/sniplias-linux-x86_64
+          mkdir final
+          find release -type f -exec cp {} final/ \;
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            release/*.deb
-            release/sniplias-*-x86_64.tar.gz
-            release/sniplias-linux-x86_64
+          files: final/*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  aur:
+    needs: release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate PKGBUILD
+        run: |
+          cargo install cargo-aur
+          cargo aur pkgbuild
 
       - name: Deploy to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: sniplias-bin
-          pkgbuild: release/PKGBUILD
+          pkgbuild: target/cargo-aur/PKGBUILD
           commit_username: otomay
           commit_email: otomay@users.noreply.github.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
