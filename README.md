@@ -2,7 +2,6 @@
 
 ## ⚠️ Important Notice: 100% AI-Generated Code
 
----
 <img width="1885" height="996" alt="image" src="https://github.com/user-attachments/assets/fc33518c-793c-4a01-bde6-78e307859c28" />
 
 ---
