@@ -10,76 +10,75 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: sniplias-linux-x86_64
+
+          # Linux ARM64 (cross)
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            name: sniplias-linux-aarch64
+
+          # macOS Intel
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: sniplias-macos-x86_64
+
+          # macOS ARM
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            name: sniplias-macos-aarch64
+
+          # Windows
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: sniplias-windows-x86_64.exe
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install ARM cross compiler
+      - uses: Swatinem/rust-cache@v2
+
+      # Instala cross só para Linux ARM
+      - name: Install cross
         if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+        run: cargo install cross
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Install cargo-deb
-        run: cargo install cargo-deb
-
-      - name: Generate deb
-        run: cargo deb --target ${{ matrix.target }} --output release
-
-      - name: Prepare binary
         run: |
-          mkdir -p release
-          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
-            cp target/${{ matrix.target }}/release/sniplias release/sniplias-linux-x86_64
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            cross build --release --target ${{ matrix.target }}
           else
-            cp target/${{ matrix.target }}/release/sniplias release/sniplias-linux-aarch64
+            cargo build --release --target ${{ matrix.target }}
           fi
 
-      - name: Upload artifacts (internal)
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}
-          path: release/*
+      - name: Rename binary (unix)
+        if: runner.os != 'Windows'
+        run: cp target/${{ matrix.target }}/release/sniplias ${{ matrix.name }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
+      - name: Rename binary (windows)
+        if: runner.os == 'Windows'
+        run: copy target\${{ matrix.target }}\release\sniplias.exe ${{ matrix.name }}
 
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release
-
-      - name: Flatten artifacts
-        run: |
-          mkdir final
-          find release -type f -exec cp {} final/ \;
-
-      - name: Upload to GitHub Release
+      - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: final/*
-          generate_release_notes: true
+          files: ${{ matrix.name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   aur:
-    needs: release
+    needs: build
     runs-on: ubuntu-latest
 
     steps:
