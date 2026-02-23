@@ -21,20 +21,21 @@ I was curious about how “vibecoders” work, so I decided to test a few tools 
 I was already familiar with Ratatui, since I use several TUIs in my daily workflow. One thing I’ve always wanted was a simple alias and snippet manager.
 
 For aliases, I wasn’t using anything special; I would just edit my shell’s source file directly.
-For snippets, I was using `pet` (which I still recommend if you’re concerned about AI-generated projects).
+For snippets, I was using [pet](https://github.com/knqyf263/pet) (which I still recommend if you’re concerned about AI-generated projects).
 
 That said, I’m not even sure “snippet” is the best term here. In practice, these are just commands meant to be executed in the terminal 🙂
 
-The issue for me was that `pet` isn’t as simple to use as I would like. That’s what motivated me to start this project.
+The issue for me was that [pet](https://github.com/knqyf263/pet) isn’t as simple to use as I would like. That’s what motivated me to start this project.
 
 ---
 
 ### Tools I Used
 
-* `opencode`
-* `oh-my-opencode`
-* `vibekanban`
-* `picoclaw`
+* [opencode](https://github.com/anomalyco/opencode) (pretty nice)
+* [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) (just wow, the free models are awesome (I only used free models in this project))
+* [vibe-kanban](https://github.com/BloopAI/vibe-kanban) (kinda laggy/buggy in my machine, I only used to fix a single issue)
+* [picoclaw](https://github.com/sipeed/picoclaw) (probably just inserted a dozen lines, not extensivelly used)
+* [aicommits](https://github.com/Nutlope/aicommits) (used a few times, but ended rewriting the history -- stil gona use it tho)
 
 ---
 
