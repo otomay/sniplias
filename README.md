@@ -2,6 +2,19 @@
 
 ## ⚠️ Important Notice: 100% AI-Generated Code
 
+---
+<img width="1885" height="996" alt="image" src="https://github.com/user-attachments/assets/fc33518c-793c-4a01-bde6-78e307859c28" />
+
+---
+
+<img width="1906" height="991" alt="image" src="https://github.com/user-attachments/assets/7fb76df5-ec59-4d3d-8ece-12a7c4390679" />
+
+---
+
+<img width="1876" height="984" alt="image" src="https://github.com/user-attachments/assets/8ccc83c7-3510-4757-9bc6-f5b50f47655a" />
+
+---
+
 ### Why?
 
 I was curious about how “vibecoders” work, so I decided to test a few tools using a language I had never worked with before: **Rust**.
