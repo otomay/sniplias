@@ -54,7 +54,7 @@ A beautiful TUI for managing shell aliases and command snippets.
 ### Arch Linux (AUR)
 
 ```bash
-yay -S sniplias
+yay -S sniplias-bin
 ```
 
 ### Debian/Ubuntu
