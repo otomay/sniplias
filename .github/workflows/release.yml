@@ -18,11 +18,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build release
-        run: cargo build --release --locked
+        run: cargo build --release
 
       - name: Generate deb package
         run: |
-          cargo install cargo-deb --locked
+          cargo install cargo-deb
           cargo deb --output release
 
       - name: Create tarball
