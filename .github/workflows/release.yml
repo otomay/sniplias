@@ -111,6 +111,10 @@ jobs:
           # Modify the bin version to download pre-built binary from GitHub Release
           sed -i 's|source=(.*)|source=("sniplias-linux-x86_64::https://github.com/${{ github.repository }}/releases/download/v$pkgver/sniplias-linux-x86_64")|' target/cargo-aur/bin/PKGBUILD
 
+      - name: Fix package() for sniplias-bin
+        run: |
+          sed -i 's|install -Dm755 sniplias -t "$pkgdir/usr/bin"|install -Dm755 sniplias-linux-x86_64 "$pkgdir/usr/bin/sniplias"|' target/cargo-aur/bin/PKGBUILD
+
       - name: Generate checksum for sniplias-bin
         run: |
           curl -sL "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/sniplias-linux-x86_64" -o /tmp/sniplias-linux-x86_64
