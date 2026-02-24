@@ -2,21 +2,9 @@
 
 A beautiful TUI for managing shell aliases and command snippets.
 
+https://github.com/user-attachments/assets/9af286fc-c08e-4239-bfec-bc8745f7f7bc
+
 [⚠️ Vibe-coded project ⚠️](#user-warning)
-
----
-
-## Screenshots
-
-<img width="1901" height="1010" alt="image" src="https://github.com/user-attachments/assets/149bf9ed-f391-442d-ac28-c1023fbcc1bb" />
-
----
-
-<img width="1901" height="999" alt="image" src="https://github.com/user-attachments/assets/3ffc4a2c-a869-4a12-832f-ce0943eaeb79" />
-
----
-
-<img width="1898" height="1017" alt="image" src="https://github.com/user-attachments/assets/dc6a52fc-6bfc-440f-8737-9a65e315b0d1" />
 
 ---
 
