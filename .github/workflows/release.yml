@@ -114,7 +114,8 @@ jobs:
       - name: Fix package() for sniplias-bin
         run: |
           sed -i 's|install -Dm755 sniplias -t "$pkgdir/usr/bin"|install -Dm755 sniplias-linux-x86_64 "$pkgdir/usr/bin/sniplias"|' target/cargo-aur/bin/PKGBUILD
-
+          sed -i '/install -Dm644 LICENSE/d' target/cargo-aur/bin/PKGBUILD
+          
       - name: Generate checksum for sniplias-bin
         run: |
           curl -sL "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/sniplias-linux-x86_64" -o /tmp/sniplias-linux-x86_64
