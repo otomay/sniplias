@@ -88,49 +88,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(update_info) = &app.update_info {
         if update_info.has_update {
             println!();
-            println!("╔════════════════════════════════════════════════════════════╗");
-            println!("║           🎉 New version available! 🎉                 ║");
-            println!("╠════════════════════════════════════════════════════════════╣");
             println!(
-                "║  Current: {}                                              ║",
-                update_info.current_version
-            );
-            println!(
-                "║  Latest:  {}                                              ║",
-                update_info.latest_version
+                "Update available: v{} -> v{}",
+                update_info.current_version, update_info.latest_version
             );
 
-            match update_info.install_method {
-                update::InstallMethod::Manual => {
-                    println!("╠════════════════════════════════════════════════════════════╣");
-                    println!("║  Install method: Manual (install.sh)                       ║");
-                    println!("║                                                              ║");
-                    println!("║  Run to update:                                             ║");
-                    println!(
-                        "║  curl -sL https://raw.githubusercontent.com/.../install.sh | sh  ║"
-                    );
-                }
-                update::InstallMethod::Cargo => {
-                    println!("╠════════════════════════════════════════════════════════════╣");
-                    println!("║  Install method: Cargo                                     ║");
-                    println!("║                                                              ║");
-                    println!("║  Run to update:                                             ║");
-                    println!("║  cargo install sniplias                                     ║");
-                }
-                update::InstallMethod::Pacman => {
-                    println!("╠════════════════════════════════════════════════════════════╣");
-                    println!("║  Install method: Pacman (AUR)                              ║");
-                    println!("║                                                              ║");
-                    println!("║  Run to update:                                             ║");
-                    println!("║  yay -S sniplias (or your AUR helper)                       ║");
-                }
-                update::InstallMethod::Unknown => {
-                    println!("╠════════════════════════════════════════════════════════════╣");
-                    println!("║  Could not detect install method.                           ║");
-                    println!("║  Please update manually.                                   ║");
+            // If Manual install and user confirmed, run the update script
+            if app.update_confirmed {
+                if update_info.install_method == update::InstallMethod::Manual {
+                    println!("\nRunning update script...");
+                    let status = std::process::Command::new("sh")
+                        .arg("-c")
+                        .arg("curl -sL https://raw.githubusercontent.com/otomay/sniplias/master/scripts/install.sh | sh")
+                        .status();
+
+                    match status {
+                        Ok(s) if s.success() => {
+                            println!("Update completed successfully!");
+                        }
+                        Ok(s) => {
+                            eprintln!("Update failed with exit code: {:?}", s.code());
+                        }
+                        Err(e) => {
+                            eprintln!("Failed to run update script: {}", e);
+                        }
+                    }
                 }
             }
-            println!("╚════════════════════════════════════════════════════════════╝");
             println!();
         }
     }

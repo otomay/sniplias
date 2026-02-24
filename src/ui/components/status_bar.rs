@@ -14,14 +14,21 @@ pub fn render_status_bar(
     is_help_visible: bool,
     update_info: &Option<UpdateInfo>,
 ) {
+    // Check if update is available
+    let has_update = update_info.as_ref().map(|i| i.has_update).unwrap_or(false);
+
     let shortcuts = if is_help_visible {
         vec![("Esc", "Close")]
     } else if is_dialog_open {
         vec![("Tab", "Next"), ("Enter", "Confirm"), ("Esc", "Cancel")]
     } else if is_searching {
-        vec![("Enter/Esc", "Exit"), ("q", "Quit")]
+        let mut shortcuts = vec![("Enter/Esc", "Exit"), ("q", "Quit")];
+        if has_update {
+            shortcuts.insert(0, ("U", "Update"));
+        }
+        shortcuts
     } else {
-        match current_tab {
+        let mut base_shortcuts = match current_tab {
             Tab::Aliases => vec![
                 ("←/→  j/k", "Navigate"),
                 ("/", "Search"),
@@ -41,7 +48,14 @@ pub fn render_status_bar(
                 ("?", "Help"),
                 ("q", "Quit"),
             ],
+        };
+
+        // Add U for update if available
+        if has_update {
+            base_shortcuts.insert(0, ("U", "Update"));
         }
+
+        base_shortcuts
     };
 
     let mut spans = Vec::new();

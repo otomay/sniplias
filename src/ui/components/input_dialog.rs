@@ -1,18 +1,18 @@
-#![allow(dead_code)]
-use super::super::Theme;
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
-    style::Style,
-    text::Line,
-    widgets::{Block, Borders, Clear, Paragraph},
+    layout::Rect,
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{Block, Borders, Paragraph},
     Frame,
 };
 
+use crate::ui::Theme;
+
+#[derive(Debug, Clone)]
 pub struct InputField {
     pub label: String,
     pub value: String,
-    pub cursor_pos: usize,
-    pub focused: bool,
+    pub cursor_position: usize,
 }
 
 impl InputField {
@@ -20,48 +20,52 @@ impl InputField {
         Self {
             label: label.into(),
             value: String::new(),
-            cursor_pos: 0,
-            focused: false,
+            cursor_position: 0,
         }
     }
 
     pub fn with_value(mut self, value: impl Into<String>) -> Self {
         self.value = value.into();
-        self.cursor_pos = self.value.len();
+        self.cursor_position = self.value.len();
         self
     }
 
     pub fn handle_char(&mut self, c: char) {
-        self.value.insert(self.cursor_pos, c);
-        self.cursor_pos += 1;
+        if self.cursor_position <= self.value.len() {
+            self.value.insert(self.cursor_position, c);
+        } else {
+            self.value.push(c);
+        }
+        self.cursor_position += 1;
     }
 
     pub fn handle_backspace(&mut self) {
-        if self.cursor_pos > 0 {
-            self.cursor_pos -= 1;
-            self.value.remove(self.cursor_pos);
+        if self.cursor_position > 0 && !self.value.is_empty() {
+            self.value.remove(self.cursor_position - 1);
+            self.cursor_position -= 1;
         }
     }
 
     pub fn handle_delete(&mut self) {
-        if self.cursor_pos < self.value.len() {
-            self.value.remove(self.cursor_pos);
+        if self.cursor_position < self.value.len() {
+            self.value.remove(self.cursor_position);
         }
     }
 
     pub fn handle_left(&mut self) {
-        if self.cursor_pos > 0 {
-            self.cursor_pos -= 1;
+        if self.cursor_position > 0 {
+            self.cursor_position -= 1;
         }
     }
 
     pub fn handle_right(&mut self) {
-        if self.cursor_pos < self.value.len() {
-            self.cursor_pos += 1;
+        if self.cursor_position < self.value.len() {
+            self.cursor_position += 1;
         }
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct InputDialog {
     pub title: String,
     pub fields: Vec<InputField>,
@@ -77,6 +81,7 @@ pub enum DialogMode {
     Delete,
     Run,
     Input,
+    Update,
 }
 
 impl InputDialog {
@@ -106,10 +111,17 @@ impl InputDialog {
         self
     }
 
+    pub fn current_field(&self) -> Option<&InputField> {
+        self.fields.get(self.current_field)
+    }
+
+    pub fn current_field_mut(&mut self) -> Option<&mut InputField> {
+        self.fields.get_mut(self.current_field)
+    }
+
     pub fn next_field(&mut self) {
         if !self.fields.is_empty() {
             self.current_field = (self.current_field + 1) % self.fields.len();
-            self.update_focus();
         }
     }
 
@@ -120,18 +132,13 @@ impl InputDialog {
             } else {
                 self.current_field - 1
             };
-            self.update_focus();
         }
     }
 
-    pub fn update_focus(&mut self) {
-        for (i, field) in self.fields.iter_mut().enumerate() {
-            field.focused = i == self.current_field;
+    fn update_focus(&mut self) {
+        if self.current_field >= self.fields.len() {
+            self.current_field = self.fields.len().saturating_sub(1);
         }
-    }
-
-    pub fn current_field_mut(&mut self) -> Option<&mut InputField> {
-        self.fields.get_mut(self.current_field)
     }
 
     pub fn get_values(&self) -> Vec<(String, String)> {
@@ -140,109 +147,85 @@ impl InputDialog {
             .map(|f| (f.label.clone(), f.value.clone()))
             .collect()
     }
-
-    pub fn centered_rect(&self, percent_x: u16, percent_y: u16, r: Rect) -> Rect {
-        let popup_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Percentage((100 - percent_y) / 2),
-                Constraint::Percentage(percent_y),
-                Constraint::Percentage((100 - percent_y) / 2),
-            ])
-            .split(r);
-
-        Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage((100 - percent_x) / 2),
-                Constraint::Percentage(percent_x),
-                Constraint::Percentage((100 - percent_x) / 2),
-            ])
-            .split(popup_layout[1])[1]
-    }
 }
 
 pub fn render_input_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme) {
     let area = f.area();
-    let popup_area = dialog.centered_rect(60, 60, area);
+    let width = std::cmp::min(60, area.width - 4);
+    let height = std::cmp::min(dialog.fields.len() as u16 * 2 + 5, area.height - 2);
 
-    f.render_widget(Clear, popup_area);
+    let x = (area.width - width) / 2;
+    let y = (area.height - height) / 2;
 
-    let title_str = format!(" {} ", dialog.title);
     let block = Block::default()
+        .title(dialog.title.clone())
         .borders(Borders::ALL)
-        .border_style(theme.border_style(true))
-        .border_type(theme.border_type())
-        .title(Line::from(theme.gradient_text(&title_str)))
-        .style(Style::default().bg(theme.surface));
+        .border_style(Style::default().fg(theme.border));
 
-    let inner_area = block.inner(popup_area);
-    f.render_widget(block, popup_area);
+    let inner_area = block.inner(Rect {
+        x,
+        y,
+        width,
+        height,
+    });
 
-    let constraints: Vec<Constraint> = dialog
-        .fields
-        .iter()
-        .map(|_| Constraint::Length(3))
-        .chain(std::iter::once(Constraint::Min(1)))
-        .collect();
+    f.render_widget(
+        block,
+        Rect {
+            x,
+            y,
+            width,
+            height,
+        },
+    );
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .margin(1)
-        .constraints(constraints)
-        .split(inner_area);
+    let mut spans = Vec::new();
 
-    for (i, (field, chunk)) in dialog.fields.iter().zip(chunks.iter()).enumerate() {
+    for (i, field) in dialog.fields.iter().enumerate() {
         let is_focused = i == dialog.current_field;
+        let field_color = if is_focused {
+            theme.gradient_color(0.0)
+        } else {
+            theme.text_primary
+        };
 
-        let color = theme.gradient_color(i as f32 / dialog.fields.len().max(1) as f32);
+        spans.push(Span::styled(
+            format!("{}: ", field.label),
+            Style::default().fg(theme.text_secondary),
+        ));
 
-        let field_block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(theme.border_style(is_focused))
-            .border_type(theme.border_type())
-            .title(ratatui::text::Span::styled(
-                format!(" {} ", field.label),
-                if is_focused {
-                    Style::default()
-                        .fg(color)
-                        .add_modifier(ratatui::style::Modifier::BOLD)
-                } else {
-                    Style::default().fg(theme.text_secondary)
-                },
+        if is_focused {
+            let before_cursor = &field.value[..field.cursor_position.min(field.value.len())];
+            let after_cursor = &field.value[field.cursor_position.min(field.value.len())..];
+
+            spans.push(Span::styled(
+                before_cursor,
+                Style::default().fg(field_color),
             ));
-
-        let style = if is_focused {
-            Style::default().fg(color)
+            spans.push(Span::styled(
+                "_",
+                Style::default()
+                    .fg(field_color)
+                    .add_modifier(ratatui::style::Modifier::UNDERLINED),
+            ));
+            spans.push(Span::styled(after_cursor, Style::default().fg(field_color)));
         } else {
-            Style::default().fg(theme.text_secondary)
-        };
+            spans.push(Span::styled(&field.value, Style::default().fg(field_color)));
+        }
 
-        let display_text = if is_focused {
-            let prefix = &field.value[..field.cursor_pos];
-            let suffix = &field.value[field.cursor_pos..];
-            format!("{}|{}", prefix, suffix)
-        } else {
-            field.value.clone()
-        };
-
-        let paragraph = Paragraph::new(display_text).style(style).block(field_block);
-
-        f.render_widget(paragraph, *chunk);
+        if i < dialog.fields.len() - 1 {
+            spans.push(Span::raw("\n"));
+        }
     }
 
     if let Some((msg, is_error)) = &dialog.message {
-        let msg_style = if *is_error {
-            theme.error_style()
-        } else {
-            theme.success_style()
-        };
-
-        let msg_chunk = chunks.last().unwrap();
-        let msg_paragraph = Paragraph::new(msg.as_str())
-            .style(msg_style)
-            .alignment(ratatui::layout::Alignment::Center);
-
-        f.render_widget(msg_paragraph, *msg_chunk);
+        spans.push(Span::raw("\n\n"));
+        let color = if *is_error { Color::Red } else { Color::Green };
+        spans.push(Span::styled(msg, Style::default().fg(color)));
     }
+
+    let paragraph =
+        Paragraph::new(Line::from(spans)).style(Style::default().fg(theme.text_primary));
+
+    f.render_widget(paragraph, inner_area);
 }

@@ -38,6 +38,7 @@ pub struct AppState {
     pub aliases_modified: bool,
     pub source_command: Option<String>,
     pub update_info: Option<UpdateInfo>,
+    pub update_confirmed: bool,
 }
 
 impl AppState {
@@ -65,6 +66,7 @@ impl AppState {
             aliases_modified: false,
             source_command,
             update_info: None,
+            update_confirmed: false,
         })
     }
 
@@ -277,6 +279,51 @@ impl AppState {
 
     pub fn mark_aliases_modified(&mut self) {
         self.aliases_modified = true;
+    }
+
+    pub fn show_update_dialog(&mut self) {
+        if let Some(info) = &self.update_info {
+            if info.has_update {
+                let install_cmd = match info.install_method {
+                    crate::update::InstallMethod::Manual => {
+                        "curl -sL https://raw.githubusercontent.com/otomay/sniplias/master/scripts/install.sh | sh"
+                    }
+                    crate::update::InstallMethod::Cargo => "cargo install sniplias",
+                    crate::update::InstallMethod::Pacman => "yay -S sniplias (or your AUR helper)",
+                    crate::update::InstallMethod::Unknown => "Manual installation required",
+                };
+
+                let hint = if info.install_method == crate::update::InstallMethod::Manual {
+                    "(Press Enter to update now)"
+                } else {
+                    "(Run the command above to update)"
+                };
+
+                self.dialog = Some(
+                    InputDialog::new(
+                        &format!(
+                            "Update v{} -> v{}",
+                            info.current_version, info.latest_version
+                        ),
+                        crate::ui::DialogMode::Update,
+                    )
+                    .add_field_with_value("Install method", &format!("{:?}", info.install_method))
+                    .add_field_with_value("Update command", install_cmd)
+                    .add_field_with_value("Hint", hint),
+                );
+                self.focus = Focus::Dialog;
+                self.mode = AppMode::Dialog;
+            }
+        }
+    }
+
+    pub fn confirm_update(&mut self) {
+        if let Some(info) = &self.update_info {
+            if info.has_update && info.install_method == crate::update::InstallMethod::Manual {
+                self.update_confirmed = true;
+            }
+        }
+        self.close_dialog();
     }
 
     pub fn quit(&mut self) {

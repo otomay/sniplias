@@ -34,18 +34,11 @@ pub fn detect_install_method() -> InstallMethod {
     if let Ok(path) = std::env::current_exe() {
         let path_str = path.to_string_lossy().to_lowercase();
 
-        // Check if installed via cargo (in ~/.cargo/bin or target/)
-        if path_str.contains(".cargo")
-            || path_str.contains("target/release") && !path_str.contains("deps")
-        {
-            return InstallMethod::Cargo;
-        }
-
-        // Check if installed via pacman (Arch Linux AUR)
+        // First check if installed in system paths (not a dev build)
+        // These indicate either Manual or Pacman install
         if path_str.starts_with("/usr/bin/") || path_str.starts_with("/usr/local/bin/") {
-            // Could be manual or pacman - check if we can detect pacman
+            // Check if tracked by pacman
             if std::path::Path::new("/var/lib/pacman").exists() {
-                // Try to check if the binary is tracked by pacman
                 let output = std::process::Command::new("pacman")
                     .args(["-Qo", &path.to_string_lossy()])
                     .output();
@@ -57,7 +50,7 @@ pub fn detect_install_method() -> InstallMethod {
                 }
             }
 
-            // If we can't confirm pacman, assume manual (install.sh)
+            // If in system path but not pacman, it's Manual
             return InstallMethod::Manual;
         }
 
@@ -65,11 +58,29 @@ pub fn detect_install_method() -> InstallMethod {
         if path_str.contains(".local/bin") {
             return InstallMethod::Manual;
         }
+
+        // Now check for cargo - only if in ~/.cargo/bin explicitly
+        // We check this AFTER system paths to avoid false positives from dev builds
+        if path_str.contains(".cargo/bin") {
+            return InstallMethod::Cargo;
+        }
+
+        // target/release without deps is likely cargo install but could be dev build
+        // Only mark as cargo if we're sure it's not a dev build
+        // Check if CARGO_MANIFEST_DIR is set (dev build indicator)
+        if std::env::var("CARGO_MANIFEST_DIR").is_ok() {
+            // We're in a dev build, don't assume cargo install
+            return InstallMethod::Unknown;
+        }
+
+        // If in target/release and no other indicators, could be cargo install
+        if path_str.contains("target/release") && !path_str.contains("deps") {
+            return InstallMethod::Cargo;
+        }
     }
 
     // Try to detect via environment
-    // If CARGO_HOME is set, likely installed via cargo
-    if std::env::var("CARGO_HOME").is_ok() {
+    if std::env::var("CARGO_HOME").is_ok() && std::env::var("CARGO_MANIFEST_DIR").is_err() {
         return InstallMethod::Cargo;
     }
 

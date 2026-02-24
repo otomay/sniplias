@@ -29,6 +29,7 @@ fn handle_normal_mode(app: &mut AppState, key: crossterm::event::KeyEvent) {
     match key.code {
         KeyCode::Char('q') => app.quit(),
         KeyCode::Char('?') => app.toggle_help(),
+        KeyCode::Char('u') | KeyCode::Char('U') => app.show_update_dialog(),
         KeyCode::Tab => app.next_tab(),
         KeyCode::BackTab => app.prev_tab(),
         KeyCode::Left => app.prev_tab(),
@@ -183,6 +184,9 @@ fn handle_dialog_submit(
         },
         DialogMode::Run => {
             run_snippet(app, &values_map)?;
+        }
+        DialogMode::Update => {
+            app.confirm_update();
         }
         _ => {}
     }
