@@ -97,6 +97,7 @@ jobs:
       - name: Create PKGBUILD for sniplias-bin (pre-built)
         run: |
           cp target/cargo-aur/PKGBUILD target/cargo-aur/PKGBUILD-bin
+          sed -i 's/^pkgbase=sniplias$/pkgbase=sniplias-bin/' target/cargo-aur/PKGBUILD-bin
           sed -i 's/^pkgname=sniplias$/pkgname=sniplias-bin/' target/cargo-aur/PKGBUILD-bin
           sed -i 's|source=(.*)|source=("sniplias-linux-x86_64::https://github.com/${{ github.repository }}/releases/download/v$pkgver/sniplias-linux-x86_64")|' target/cargo-aur/PKGBUILD-bin
 
