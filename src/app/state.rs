@@ -47,7 +47,7 @@ impl AppState {
 
         Ok(Self {
             running: true,
-            current_tab: Tab::Aliases,
+            current_tab: Tab::Snippets,
             focus: Focus::List,
             mode: AppMode::Normal,
             search: SearchBar::new(),

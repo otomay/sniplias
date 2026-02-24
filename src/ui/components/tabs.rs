@@ -14,20 +14,20 @@ pub enum Tab {
 
 impl Tab {
     pub fn titles() -> Vec<&'static str> {
-        vec!["Aliases", "Snippets"]
+        vec!["Snippets", "Aliases"]
     }
 
     pub fn index(self) -> usize {
         match self {
-            Tab::Aliases => 0,
-            Tab::Snippets => 1,
+            Tab::Snippets => 0,
+            Tab::Aliases => 1,
         }
     }
 
     pub fn from_index(index: usize) -> Self {
         match index {
-            0 => Tab::Aliases,
-            _ => Tab::Snippets,
+            0 => Tab::Snippets,
+            _ => Tab::Aliases,
         }
     }
 
