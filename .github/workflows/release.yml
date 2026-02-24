@@ -94,6 +94,18 @@ jobs:
           cargo install cargo-aur
           cargo aur pkgbuild
 
+      - name: Create PKGBUILD for sniplias-bin (pre-built)
+        run: |
+          cp target/cargo-aur/PKGBUILD target/cargo-aur/PKGBUILD-bin
+          sed -i 's/^pkgname=sniplias$/pkgname=sniplias-bin/' target/cargo-aur/PKGBUILD-bin
+          sed -i 's|source=(.*)|source=("sniplias-linux-x86_64::https://github.com/${{ github.repository }}/releases/download/v$pkgver/sniplias-linux-x86_64")|' target/cargo-aur/PKGBUILD-bin
+
+      - name: Generate checksum for sniplias-bin
+        run: |
+          curl -sL "https://github.com/${{ github.repository }}/releases/download/v${{ github.ref_name }}/sniplias-linux-x86_64" -o /tmp/sniplias-linux-x86_64
+          SHA256=$(sha256sum /tmp/sniplias-linux-x86_64 | awk '{print $1}')
+          sed -i "/^sha256sums=('!luks')/c\\sha256sums=('$SHA256')" target/cargo-aur/PKGBUILD-bin
+
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -103,15 +115,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy to AUR
+      - name: Deploy sniplias-bin to AUR
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: sniplias-bin
+          pkgbuild: target/cargo-aur/PKGBUILD-bin
+          commit_username: otomay
+          commit_email: otomay@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: Update AUR package (pre-built)
+          ssh_keyscan_types: rsa,ecdsa,ed25519
+
+      - name: Deploy sniplias to AUR
+        uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
+        with:
+          pkgname: sniplias
           pkgbuild: target/cargo-aur/PKGBUILD
           commit_username: otomay
           commit_email: otomay@users.noreply.github.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update AUR package
+          commit_message: Update AUR package (source)
           ssh_keyscan_types: rsa,ecdsa,ed25519
 
       - name: Deploy to crates.io
