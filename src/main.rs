@@ -2,10 +2,13 @@ mod app;
 mod models;
 mod storage;
 mod ui;
+mod update;
 mod utils;
 
 use app::{AppState, EventHandler};
 use clap::Parser;
+use std::sync::mpsc;
+use std::thread;
 use ui::{
     render_help_dialog, render_input_dialog, render_list, render_search_bar, render_status_bar,
     render_tabs, Theme,
@@ -22,17 +25,36 @@ struct Args {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _args = Args::parse();
 
+    // Start update check in background
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        let update_info = update::check_for_update();
+        let _ = tx.send(update_info);
+    });
+
     let mut terminal = Terminal::new()?;
     let mut app = AppState::new()?;
     let events = EventHandler::default();
     let theme = Theme::default();
 
+    // Check for update in the first iteration
+    let mut update_checked = false;
+
     while app.running {
         terminal.draw(|f| {
             let area = f.area();
-
             render_ui(f, &app, &theme, area);
         })?;
+
+        // Process update result if available (non-blocking)
+        if !update_checked {
+            if let Ok(info) = rx.try_recv() {
+                if let Some(update_info) = info {
+                    app.set_update_info(update_info);
+                }
+                update_checked = true;
+            }
+        }
 
         match events.next()? {
             app::Event::Key(key) => {
@@ -59,6 +81,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(source_cmd) = &app.source_command {
             eprintln!("\nAliases modified! Run to reload:");
             eprintln!("  {}\n", source_cmd);
+        }
+    }
+
+    // Show update notification after app closes
+    if let Some(update_info) = &app.update_info {
+        if update_info.has_update {
+            println!();
+            println!("╔════════════════════════════════════════════════════════════╗");
+            println!("║           🎉 New version available! 🎉                 ║");
+            println!("╠════════════════════════════════════════════════════════════╣");
+            println!(
+                "║  Current: {}                                              ║",
+                update_info.current_version
+            );
+            println!(
+                "║  Latest:  {}                                              ║",
+                update_info.latest_version
+            );
+
+            match update_info.install_method {
+                update::InstallMethod::Manual => {
+                    println!("╠════════════════════════════════════════════════════════════╣");
+                    println!("║  Install method: Manual (install.sh)                       ║");
+                    println!("║                                                              ║");
+                    println!("║  Run to update:                                             ║");
+                    println!(
+                        "║  curl -sL https://raw.githubusercontent.com/.../install.sh | sh  ║"
+                    );
+                }
+                update::InstallMethod::Cargo => {
+                    println!("╠════════════════════════════════════════════════════════════╣");
+                    println!("║  Install method: Cargo                                     ║");
+                    println!("║                                                              ║");
+                    println!("║  Run to update:                                             ║");
+                    println!("║  cargo install sniplias                                     ║");
+                }
+                update::InstallMethod::Pacman => {
+                    println!("╠════════════════════════════════════════════════════════════╣");
+                    println!("║  Install method: Pacman (AUR)                              ║");
+                    println!("║                                                              ║");
+                    println!("║  Run to update:                                             ║");
+                    println!("║  yay -S sniplias (or your AUR helper)                       ║");
+                }
+                update::InstallMethod::Unknown => {
+                    println!("╠════════════════════════════════════════════════════════════╣");
+                    println!("║  Could not detect install method.                           ║");
+                    println!("║  Please update manually.                                   ║");
+                }
+            }
+            println!("╚════════════════════════════════════════════════════════════╝");
+            println!();
         }
     }
 
@@ -117,6 +190,7 @@ fn render_ui(f: &mut ratatui::Frame, app: &AppState, theme: &Theme, area: ratatu
         app.search.focused,
         app.dialog.is_some(),
         app.help_visible,
+        &app.update_info,
     );
 
     if app.help_visible {

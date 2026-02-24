@@ -2,6 +2,7 @@ use ratatui::{layout::Rect, style::Style, text::Line, widgets::Paragraph, Frame}
 
 use super::super::Theme;
 use crate::ui::Tab;
+use crate::update::{get_current_version, UpdateInfo};
 
 pub fn render_status_bar(
     f: &mut Frame,
@@ -11,6 +12,7 @@ pub fn render_status_bar(
     is_searching: bool,
     is_dialog_open: bool,
     is_help_visible: bool,
+    update_info: &Option<UpdateInfo>,
 ) {
     let shortcuts = if is_help_visible {
         vec![("Esc", "Close")]
@@ -63,9 +65,38 @@ pub fn render_status_bar(
         ));
     }
 
+    // Version text on the right
+    let version_text = if let Some(info) = update_info {
+        if info.has_update {
+            format!("v{} → v{}", info.current_version, info.latest_version)
+        } else {
+            format!("v{} (latest)", info.current_version)
+        }
+    } else {
+        format!("v{}", get_current_version())
+    };
+
+    // Render shortcuts centered
     let paragraph = Paragraph::new(Line::from(spans))
         .style(Style::default().bg(theme.surface))
         .alignment(ratatui::layout::Alignment::Center);
 
     f.render_widget(paragraph, area);
+
+    // Render version on the right side
+    let version_width = version_text.len() as u16 + 4;
+    let version_area = Rect {
+        x: area.width.saturating_sub(version_width),
+        width: version_width,
+        ..area
+    };
+
+    let version_paragraph = Paragraph::new(Line::from(vec![ratatui::text::Span::styled(
+        format!(" {} ", version_text),
+        Style::default().fg(theme.text_secondary),
+    )]))
+    .style(Style::default().bg(theme.surface))
+    .alignment(ratatui::layout::Alignment::Right);
+
+    f.render_widget(version_paragraph, version_area);
 }

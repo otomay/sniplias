@@ -2,6 +2,7 @@
 use crate::models::{Alias, Snippet};
 use crate::storage::{AliasStore, SnippetStore};
 use crate::ui::{InputDialog, SearchBar, Tab};
+use crate::update::UpdateInfo;
 use ratatui::widgets::ListState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +37,7 @@ pub struct AppState {
     pub pending_command: Option<String>,
     pub aliases_modified: bool,
     pub source_command: Option<String>,
+    pub update_info: Option<UpdateInfo>,
 }
 
 impl AppState {
@@ -62,7 +64,12 @@ impl AppState {
             pending_command: None,
             aliases_modified: false,
             source_command,
+            update_info: None,
         })
+    }
+
+    pub fn set_update_info(&mut self, info: UpdateInfo) {
+        self.update_info = Some(info);
     }
 
     pub fn next_tab(&mut self) {
