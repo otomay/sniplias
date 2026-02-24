@@ -61,9 +61,73 @@ case "$OS" in
     *) printf "${BRIGHT_RED}Unsupported operating system: ${OS}${NC}\n"; exit 1 ;;
 esac
 
-printf "${CYAN}Detected: ${OS}/${ARCH}${NC}\n"
+printf "${CYAN}Detected: ${OS}/${ARCH}${NC}\n\n"
+
+# Check for existing installations
+check_existing_installation() {
+    EXISTING_INSTALLS=""
+    
+    # Check yay (AUR packages)
+    if command -v yay >/dev/null 2>&1; then
+        if yay -Qs "^${BINARY_NAME}$" >/dev/null 2>&1; then
+            EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - yay/AUR"
+        fi
+    fi
+    
+    # Check cargo
+    if command -v cargo >/dev/null 2>&1; then
+        if cargo install --list 2>/dev/null | grep -q "^${BINARY_NAME} "; then
+            CARGO_VERSION=$(cargo install --list 2>/dev/null | grep "^${BINARY_NAME} " | awk '{print $2}')
+            EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - cargo: ${CARGO_VERSION}"
+        fi
+    fi
+    
+    # Check Homebrew
+    if command -v brew >/dev/null 2>&1; then
+        if brew list --formula 2>/dev/null | grep -q "^${BINARY_NAME}$"; then
+            BREW_VERSION=$(brew list --formula ${BINARY_NAME} 2>/dev/null | head -1)
+            EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - Homebrew: ${BREW_VERSION}"
+        fi
+    fi
+    
+    # Check if binary already exists in common locations
+    for dir in /usr/local/bin /usr/bin ~/.local/bin; do
+        EXPANDED_DIR=$(eval echo "$dir")
+        if [ -f "$EXPANDED_DIR/${BINARY_NAME}" ]; then
+            EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - ${dir} (manual)"
+        fi
+    done
+    
+    if [ -n "$EXISTING_INSTALLS" ]; then
+        printf "${YELLOW}⚠️  Found existing installation(s):${NC}${EXISTING_INSTALLS}\n"
+        printf "${YELLOW}This script will install to ${INSTALL_DIR}, which may conflict.${NC}\n"
+        printf "\n${CYAN}Continue anyway? [y/N]: ${NC}"
+        
+        # Read answer (handle non-interactive mode)
+        if [ -t 0 ]; then
+            read -r answer || answer="n"
+        else
+            answer="y"
+        fi
+        
+        case "$answer" in
+            y|Y) 
+                printf "${CYAN}Proceeding with installation...${NC}\n\n"
+                ;;
+            *)
+                printf "${YELLOW}Installation cancelled.${NC}\n"
+                exit 0
+                ;;
+        esac
+    fi
+}
+
+# Run existing installation check
+check_existing_installation
 
 # Get the latest release tag
+
+
 printf "${CYAN}Fetching latest release...${NC}\n"
 LATEST=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)
 
@@ -72,7 +136,7 @@ if [ -z "$LATEST" ]; then
     exit 1
 fi
 
-printf "${CYAN}Latest version: ${LATEST}${NC}\n"
+printf "${CYAN}Latest version: ${LATEST}${NC}\n\n"
 
 # Construct download URL based on OS
 case "$OS" in
