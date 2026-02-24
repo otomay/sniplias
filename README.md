@@ -8,15 +8,15 @@ A beautiful TUI for managing shell aliases and command snippets.
 
 ## Screenshots
 
-<img width="1885" height="996" alt="image" src="https://github.com/user-attachments/assets/fc33518c-793c-4a01-bde6-78e307859c28" />
+<img width="1901" height="1010" alt="image" src="https://github.com/user-attachments/assets/149bf9ed-f391-442d-ac28-c1023fbcc1bb" />
 
 ---
 
-<img width="1906" height="991" alt="image" src="https://github.com/user-attachments/assets/7fb76df5-ec59-4d3d-8ece-12a7c4390679" />
+<img width="1901" height="999" alt="image" src="https://github.com/user-attachments/assets/3ffc4a2c-a869-4a12-832f-ce0943eaeb79" />
 
 ---
 
-<img width="1876" height="984" alt="image" src="https://github.com/user-attachments/assets/8ccc83c7-3510-4757-9bc6-f5b50f47655a" />
+<img width="1898" height="1017" alt="image" src="https://github.com/user-attachments/assets/dc6a52fc-6bfc-440f-8737-9a65e315b0d1" />
 
 ---
 
