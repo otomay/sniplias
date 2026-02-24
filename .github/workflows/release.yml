@@ -105,12 +105,6 @@ jobs:
           
           # Remove -bin suffix from source version
           sed -i 's/^pkgname=sniplias-bin$/pkgname=sniplias/' target/cargo-aur/source/PKGBUILD
-          
-          # Generate .SRCINFO for source version
-          cd target/cargo-aur/source && makepkg --printsrcinfo > .SRCINFO
-
-          # Generate .SRCINFO for bin version
-          cd target/cargo-aur/bin && makepkg --printsrcinfo > .SRCINFO
 
       - name: Modify PKGBUILD-bin to download from GitHub Release
         run: |
