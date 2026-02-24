@@ -93,19 +93,33 @@ jobs:
         run: |
           cargo install cargo-aur
           cargo aur pkgbuild
+          
+          # Create directories for organization
+          mkdir -p target/cargo-aur/bin target/cargo-aur/source
+          
+          # cargo-aur generates with -bin suffix by default
+          # bin/ -> sniplias-bin (pre-built)
+          # source/ -> sniplias (compiles from source)
+          cp target/cargo-aur/PKGBUILD target/cargo-aur/bin/
+          cp target/cargo-aur/.SRCINFO target/cargo-aur/bin/
+          cp target/cargo-aur/PKGBUILD target/cargo-aur/source/
+          
+          # Remove -bin suffix from source version
+          sed -i 's/^pkgname=sniplias-bin$/pkgname=sniplias/' target/cargo-aur/source/PKGBUILD
+          
+          # Generate .SRCINFO for source version
+          cd target/cargo-aur/source && makepkg --printsrcinfo > .SRCINFO
 
-      - name: Create PKGBUILD for sniplias-bin (pre-built)
+      - name: Modify PKGBUILD-bin to download from GitHub Release
         run: |
-          cp target/cargo-aur/PKGBUILD target/cargo-aur/PKGBUILD-bin
-          sed -i 's/^pkgbase=sniplias$/pkgbase=sniplias-bin/' target/cargo-aur/PKGBUILD-bin
-          sed -i 's/^pkgname=sniplias$/pkgname=sniplias-bin/' target/cargo-aur/PKGBUILD-bin
-          sed -i 's|source=(.*)|source=("sniplias-linux-x86_64::https://github.com/${{ github.repository }}/releases/download/v$pkgver/sniplias-linux-x86_64")|' target/cargo-aur/PKGBUILD-bin
+          # Modify the bin version to download pre-built binary from GitHub Release
+          sed -i 's|source=(.*)|source=("sniplias-linux-x86_64::https://github.com/${{ github.repository }}/releases/download/v$pkgver/sniplias-linux-x86_64")|' target/cargo-aur/bin/PKGBUILD
 
       - name: Generate checksum for sniplias-bin
         run: |
           curl -sL "https://github.com/${{ github.repository }}/releases/download/v${{ github.ref_name }}/sniplias-linux-x86_64" -o /tmp/sniplias-linux-x86_64
           SHA256=$(sha256sum /tmp/sniplias-linux-x86_64 | awk '{print $1}')
-          sed -i "/^sha256sums=('!luks')/c\\sha256sums=('$SHA256')" target/cargo-aur/PKGBUILD-bin
+          sed -i "/^sha256sums=('!luks')/c\\sha256sums=('$SHA256')" target/cargo-aur/bin/PKGBUILD
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -120,7 +134,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: sniplias-bin
-          pkgbuild: target/cargo-aur/PKGBUILD-bin
+          pkgbuild: target/cargo-aur/bin/PKGBUILD
           commit_username: otomay
           commit_email: otomay@users.noreply.github.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
@@ -131,7 +145,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
         with:
           pkgname: sniplias
-          pkgbuild: target/cargo-aur/PKGBUILD
+          pkgbuild: target/cargo-aur/source/PKGBUILD
           commit_username: otomay
           commit_email: otomay@users.noreply.github.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
