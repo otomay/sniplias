@@ -42,6 +42,7 @@ fn handle_normal_mode(app: &mut AppState, key: crossterm::event::KeyEvent) {
         KeyCode::Char('a') => handle_add(app),
         KeyCode::Char('e') => handle_edit(app),
         KeyCode::Char('d') => handle_delete(app),
+        KeyCode::Char('u') => handle_update(app),
         KeyCode::Esc => {
             if app.focus == Focus::Search {
                 app.unfocus_search();
@@ -161,6 +162,12 @@ fn handle_delete(app: &mut AppState) {
     }
 }
 
+fn handle_update(app: &mut AppState) {
+    if app.update_info.update_available {
+        app.show_update_dialog();
+    }
+}
+
 fn handle_dialog_submit(
     app: &mut AppState,
     mode: DialogMode,
@@ -183,6 +190,43 @@ fn handle_dialog_submit(
         },
         DialogMode::Run => {
             run_snippet(app, &values_map)?;
+        }
+        DialogMode::Update => {
+            // Handle update confirmation
+            let confirm_value = values
+                .iter()
+                .find(|(label, _)| label == "Update? (y/n)")
+                .map(|(_, value)| value);
+
+            if let Some(confirm) = confirm_value {
+                if confirm.to_lowercase() == "y" {
+                    // User confirmed - run the update
+                    use crate::utils::InstallMethod;
+                    match app.update_info.install_method {
+                        InstallMethod::Manual => {
+                            app.pending_command = Some(
+                                "curl -sL https://raw.githubusercontent.com/otomay/sniplias/master/scripts/install.sh | sh".to_string(),
+                            );
+                            app.running = false;
+                        }
+                        InstallMethod::Cargo => {
+                            app.pending_command = Some("cargo install sniplias".to_string());
+                            app.running = false;
+                        }
+                        InstallMethod::Yay => {
+                            app.pending_command = Some("yay -Syu sniplias".to_string());
+                            app.running = false;
+                        }
+                        InstallMethod::Unknown => {
+                            app.pending_command = Some(
+                                "curl -sL https://raw.githubusercontent.com/otomay/sniplias/master/scripts/install.sh | sh".to_string(),
+                            );
+                            app.running = false;
+                        }
+                    }
+                }
+            }
+            app.close_dialog();
         }
         _ => {}
     }

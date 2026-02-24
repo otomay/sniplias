@@ -68,6 +68,7 @@ pub struct InputDialog {
     pub current_field: usize,
     pub mode: DialogMode,
     pub message: Option<(String, bool)>,
+    pub update_info: Option<(String, String)>, // (local_version, remote_version)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,6 +78,7 @@ pub enum DialogMode {
     Delete,
     Run,
     Input,
+    Update,
 }
 
 impl InputDialog {
@@ -87,6 +89,7 @@ impl InputDialog {
             current_field: 0,
             mode,
             message: None,
+            update_info: None,
         }
     }
 
@@ -102,6 +105,14 @@ impl InputDialog {
         value: impl Into<String>,
     ) -> Self {
         self.fields.push(InputField::new(label).with_value(value));
+        self.update_focus();
+        self
+    }
+
+    pub fn with_update_info(mut self, local: &str, remote: &str, install_method: &str) -> Self {
+        self.update_info = Some((local.to_string(), remote.to_string()));
+        // Add the confirmation field
+        self.fields.push(InputField::new("Update? (y/n)"));
         self.update_focus();
         self
     }
@@ -164,7 +175,15 @@ impl InputDialog {
 
 pub fn render_input_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme) {
     let area = f.area();
-    let popup_area = dialog.centered_rect(60, 60, area);
+    let popup_area = dialog.centered_rect(
+        60,
+        if dialog.mode == DialogMode::Update {
+            40
+        } else {
+            60
+        },
+        area,
+    );
 
     f.render_widget(Clear, popup_area);
 
@@ -178,6 +197,12 @@ pub fn render_input_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme) {
 
     let inner_area = block.inner(popup_area);
     f.render_widget(block, popup_area);
+
+    // Special for Update rendering dialog
+    if dialog.mode == DialogMode::Update {
+        render_update_dialog(f, dialog, theme, inner_area);
+        return;
+    }
 
     let constraints: Vec<Constraint> = dialog
         .fields
@@ -244,5 +269,72 @@ pub fn render_input_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme) {
             .alignment(ratatui::layout::Alignment::Center);
 
         f.render_widget(msg_paragraph, *msg_chunk);
+    }
+}
+
+fn render_update_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme, area: Rect) {
+    use ratatui::layout::Alignment;
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints([
+            Constraint::Length(3), // Version info
+            Constraint::Length(3), // Install method info
+            Constraint::Min(3),    // Confirm prompt
+        ])
+        .split(area);
+
+    // Show version info
+    if let Some((local, remote)) = &dialog.update_info {
+        let version_text = Paragraph::new(format!("Version {} -> {} available!", local, remote))
+            .style(Style::default().fg(theme.success))
+            .alignment(Alignment::Center);
+        f.render_widget(version_text, chunks[0]);
+    }
+
+    // Show install method message
+    let method_text = if let Some(field) = dialog.fields.first() {
+        format!("Installed manually. Run update? Press y to confirm.")
+    } else {
+        "".to_string()
+    };
+
+    let method_paragraph = Paragraph::new(method_text)
+        .style(Style::default().fg(theme.text_secondary))
+        .alignment(Alignment::Center);
+    f.render_widget(method_paragraph, chunks[1]);
+
+    // Show confirmation field
+    if let Some(field) = dialog.fields.first() {
+        let is_focused = field.focused;
+        let field_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(theme.border_style(is_focused))
+            .border_type(theme.border_type())
+            .title(ratatui::text::Span::styled(
+                format!(" {} ", field.label),
+                Style::default()
+                    .fg(theme.success)
+                    .add_modifier(ratatui::style::Modifier::BOLD),
+            ));
+
+        let color = theme.success;
+        let style = Style::default().fg(color);
+
+        let display_text = if is_focused {
+            let prefix = &field.value[..field.cursor_pos];
+            let suffix = &field.value[field.cursor_pos..];
+            format!("{}|{}", prefix, suffix)
+        } else {
+            field.value.clone()
+        };
+
+        let paragraph = Paragraph::new(display_text)
+            .style(style)
+            .block(field_block)
+            .alignment(Alignment::Center);
+
+        f.render_widget(paragraph, chunks[2]);
     }
 }

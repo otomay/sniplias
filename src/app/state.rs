@@ -2,6 +2,7 @@
 use crate::models::{Alias, Snippet};
 use crate::storage::{AliasStore, SnippetStore};
 use crate::ui::{InputDialog, SearchBar, Tab};
+use crate::utils::UpdateInfo;
 use ratatui::widgets::ListState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,6 +37,7 @@ pub struct AppState {
     pub pending_command: Option<String>,
     pub aliases_modified: bool,
     pub source_command: Option<String>,
+    pub update_info: UpdateInfo,
 }
 
 impl AppState {
@@ -44,6 +46,9 @@ impl AppState {
         let snippet_store = SnippetStore::new()?;
 
         let source_command = alias_store.source_command();
+
+        let mut update_info = UpdateInfo::new();
+        update_info.check_update();
 
         Ok(Self {
             running: true,
@@ -62,6 +67,7 @@ impl AppState {
             pending_command: None,
             aliases_modified: false,
             source_command,
+            update_info,
         })
     }
 
@@ -278,6 +284,19 @@ impl AppState {
 
     pub fn toggle_help(&mut self) {
         self.help_visible = !self.help_visible;
+    }
+
+    pub fn show_update_dialog(&mut self) {
+        if self.update_info.update_available {
+            let local = self.update_info.local_version.clone();
+            let remote = self.update_info.remote_version.clone().unwrap_or_default();
+            self.dialog = Some(
+                crate::ui::InputDialog::new("Update Available", crate::ui::DialogMode::Update)
+                    .with_update_info(&local, &remote, "manual"),
+            );
+            self.focus = Focus::Dialog;
+            self.mode = AppMode::Dialog;
+        }
     }
 }
 

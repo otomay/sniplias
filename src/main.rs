@@ -62,6 +62,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // Show update available message on exit
+    if app.update_info.update_available {
+        eprintln!("\nUpdate available: {} -> {}",
+            app.update_info.local_version,
+            app.update_info.remote_version.as_deref().unwrap_or("unknown")
+        );
+        eprintln!("Press 'u' in the app to update.\n");
+    }
+
     Ok(())
 }
 
@@ -117,6 +126,7 @@ fn render_ui(f: &mut ratatui::Frame, app: &AppState, theme: &Theme, area: ratatu
         app.search.focused,
         app.dialog.is_some(),
         app.help_visible,
+        &app.update_info,
     );
 
     if app.help_visible {
