@@ -25,7 +25,7 @@ A beautiful TUI for managing shell aliases and command snippets.
 ### Quickstart (Linux / macOS)
 
 ```bash
-curl -sL https://raw.githubusercontent.com/otomay/sniplias/main/scripts/install.sh | sh
+curl -sL https://raw.githubusercontent.com/otomay/sniplias/master/scripts/install.sh | sh
 ```
 
 ### Arch Linux (AUR)
