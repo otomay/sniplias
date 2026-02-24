@@ -31,6 +31,12 @@ curl -sL https://raw.githubusercontent.com/otomay/sniplias/main/scripts/install.
 ### Arch Linux (AUR)
 
 ```bash
+yay -S sniplias
+```
+
+Or the pre-compiled version:
+
+```bash
 yay -S sniplias-bin
 ```
 
