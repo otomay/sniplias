@@ -31,7 +31,7 @@ fi
 ASCII_LOGO="
                                             
                                             
-▄█████ ▄▄  ▄▄ ▄▄ ▄▄▄▄  ▄▄    ▄▄  ▄▄▄   ▄▄▄▄ 
+██████ ▄▄  ▄▄ ▄▄ ▄▄▄▄  ▄▄    ▄▄  ▄▄▄   ▄▄▄▄ 
 ▀▀▀▄▄▄ ███▄██ ██ ██▄█▀ ██    ██ ██▀██ ███▄▄ 
 █████▀ ██ ▀██ ██ ██    ██▄▄▄ ██ ██▀██ ▄▄██▀ 
                                             
@@ -63,9 +63,21 @@ esac
 
 printf "${CYAN}Detected: ${OS}/${ARCH}${NC}\n\n"
 
+# Get the latest release tag FIRST (needed for version comparison)
+printf "${CYAN}Fetching latest release...${NC}\n"
+LATEST=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)
+
+if [ -z "$LATEST" ]; then
+    printf "${BRIGHT_RED}Failed to fetch latest release${NC}\n"
+    exit 1
+fi
+
+printf "${CYAN}Latest version: ${LATEST}${NC}\n\n"
+
 # Check for existing installations
 check_existing_installation() {
     EXISTING_INSTALLS=""
+    NEEDS_UPGRADE=""
     
     # Check yay (AUR packages)
     if command -v yay >/dev/null 2>&1; then
@@ -90,29 +102,56 @@ check_existing_installation() {
         fi
     fi
     
-    # Check if binary already exists in common locations
+    # Check if binary already exists in common locations (LOCAL)
     for dir in /usr/local/bin /usr/bin ~/.local/bin; do
         EXPANDED_DIR=$(eval echo "$dir")
         if [ -f "$EXPANDED_DIR/${BINARY_NAME}" ]; then
-            EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - ${dir} (manual)"
+            # Try to get version from existing binary
+            INSTALLED_VERSION=$($EXPANDED_DIR/${BINARY_NAME} --version 2>/dev/null | head -1)
+            if [ -n "$INSTALLED_VERSION" ]; then
+                # Extract version number (handle various formats)
+                INSTALLED_VER=$(echo "$INSTALLED_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+                REMOTE_VER=$(echo "$LATEST" | sed 's/^v//')
+                
+                if [ "$INSTALLED_VER" = "$REMOTE_VER" ]; then
+                    printf "${GREEN}✓ ${BINARY_NAME} ${INSTALLED_VER} is already installed (latest)${NC}\n"
+                    exit 0
+                else
+                    EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - ${dir}: ${INSTALLED_VER} → ${REMOTE_VER}"
+                    NEEDS_UPGRADE="yes"
+                fi
+            else
+                EXISTING_INSTALLS="${EXISTING_INSTALLS}\n  - ${dir} (manual)"
+            fi
         fi
     done
     
     if [ -n "$EXISTING_INSTALLS" ]; then
-        printf "${YELLOW}⚠️  Found existing installation(s):${NC}${EXISTING_INSTALLS}\n"
-        printf "${YELLOW}This script will install to ${INSTALL_DIR}, which may conflict.${NC}\n"
-        printf "\n${CYAN}Continue anyway? [y/N]: ${NC}"
+        printf "${YELLOW}Found existing installation(s):${NC}${EXISTING_INSTALLS}\n"
+        
+        if [ -n "$NEEDS_UPGRADE" ]; then
+            printf "\n${CYAN}Upgrade to ${LATEST}? [Y/n]: ${NC}"
+            DEFAULT_ANSWER="y"
+        else
+            printf "\n${YELLOW}This script will install to ${INSTALL_DIR}, which may conflict.${NC}\n"
+            printf "${CYAN}Continue anyway? [y/N]: ${NC}"
+            DEFAULT_ANSWER="n"
+        fi
         
         # Read answer (handle non-interactive mode)
         if [ -t 0 ]; then
-            read -r answer || answer="n"
+            read -r answer || answer="$DEFAULT_ANSWER"
+            # If empty, use default
+            if [ -z "$answer" ]; then
+                answer="$DEFAULT_ANSWER"
+            fi
         else
             answer="y"
         fi
         
         case "$answer" in
             y|Y) 
-                printf "${CYAN}Proceeding with installation...${NC}\n\n"
+                printf "${CYAN}Proceeding...${NC}\n\n"
                 ;;
             *)
                 printf "${YELLOW}Installation cancelled.${NC}\n"
@@ -124,19 +163,6 @@ check_existing_installation() {
 
 # Run existing installation check
 check_existing_installation
-
-# Get the latest release tag
-
-
-printf "${CYAN}Fetching latest release...${NC}\n"
-LATEST=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name"' | cut -d'"' -f4)
-
-if [ -z "$LATEST" ]; then
-    printf "${BRIGHT_RED}Failed to fetch latest release${NC}\n"
-    exit 1
-fi
-
-printf "${CYAN}Latest version: ${LATEST}${NC}\n\n"
 
 # Construct download URL based on OS
 case "$OS" in
