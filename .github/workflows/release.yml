@@ -101,7 +101,6 @@ jobs:
           # bin/ -> sniplias-bin (pre-built)
           # source/ -> sniplias (compiles from source)
           cp target/cargo-aur/PKGBUILD target/cargo-aur/bin/
-          cp target/cargo-aur/.SRCINFO target/cargo-aur/bin/
           cp target/cargo-aur/PKGBUILD target/cargo-aur/source/
           
           # Remove -bin suffix from source version
@@ -109,6 +108,9 @@ jobs:
           
           # Generate .SRCINFO for source version
           cd target/cargo-aur/source && makepkg --printsrcinfo > .SRCINFO
+
+          # Generate .SRCINFO for bin version
+          cd target/cargo-aur/bin && makepkg --printsrcinfo > .SRCINFO
 
       - name: Modify PKGBUILD-bin to download from GitHub Release
         run: |
