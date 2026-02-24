@@ -113,7 +113,7 @@ jobs:
 
       - name: Generate checksum for sniplias-bin
         run: |
-          curl -sL "https://github.com/${{ github.repository }}/releases/download/v${{ github.ref_name }}/sniplias-linux-x86_64" -o /tmp/sniplias-linux-x86_64
+          curl -sL "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/sniplias-linux-x86_64" -o /tmp/sniplias-linux-x86_64
           SHA256=$(sha256sum /tmp/sniplias-linux-x86_64 | awk '{print $1}')
           sed -i "/^sha256sums=('!luks')/c\\sha256sums=('$SHA256')" target/cargo-aur/bin/PKGBUILD
 
