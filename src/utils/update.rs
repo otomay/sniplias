@@ -45,6 +45,7 @@ impl UpdateInfo {
         }
     }
 
+    #[allow(dead_code)]
     pub fn version_display(&self) -> String {
         if self.update_available {
             if let Some(ref remote) = self.remote_version {

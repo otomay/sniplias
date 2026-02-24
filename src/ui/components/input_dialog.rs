@@ -109,7 +109,7 @@ impl InputDialog {
         self
     }
 
-    pub fn with_update_info(mut self, local: &str, remote: &str, install_method: &str) -> Self {
+    pub fn with_update_info(mut self, local: &str, remote: &str, _install_method: &str) -> Self {
         self.update_info = Some((local.to_string(), remote.to_string()));
         // Add the confirmation field
         self.fields.push(InputField::new("Update? (y/n)"));
@@ -294,7 +294,7 @@ fn render_update_dialog(f: &mut Frame, dialog: &InputDialog, theme: &Theme, area
     }
 
     // Show install method message
-    let method_text = if let Some(field) = dialog.fields.first() {
+    let method_text = if let Some(_field) = dialog.fields.first() {
         format!("Installed manually. Run update? Press y to confirm.")
     } else {
         "".to_string()
